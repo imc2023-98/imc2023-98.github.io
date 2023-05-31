@@ -1,7 +1,7 @@
 title: ITEgraph
 email: 
 description: >- 
-    A Graph-Based Model of the TLS Ecosystem for Internet-wide Server Characterization
+    A Graph Model of the TLS Ecosystem and its Internet-wide Application
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://imc2023-98.github.io"
 github_username: 

@@ -89,4 +89,5 @@ The output of the Neo4J schema function:
 
 ![Schema of the Example-Graph](/assets/example_schema.svg)
 
-We can see that there were IP Addresses embedded as Altertnative Name in some certificates (these were always self-signed and we did not consider such cases in the paper).
+Note that there were IP Addresses embedded as Altertnative Name in some certificates. These were always self-signed certificates.
+However, we did not consider such cases in the paper.
