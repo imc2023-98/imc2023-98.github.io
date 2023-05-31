@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Graph-Pipeline | ITEgraph</title>
+<meta name="generator" content="Jekyll v3.9.3" />
+<meta property="og:title" content="Graph-Pipeline" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="A Graph Model of the TLS Ecosystem and its Internet-wide Application" />
+<meta property="og:description" content="A Graph Model of the TLS Ecosystem and its Internet-wide Application" />
+<link rel="canonical" href="https://imc2023-98.github.io/graph-pipeline/" />
+<meta property="og:url" content="https://imc2023-98.github.io/graph-pipeline/" />
+<meta property="og:site_name" content="ITEgraph" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Graph-Pipeline" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","description":"A Graph Model of the TLS Ecosystem and its Internet-wide Application","headline":"Graph-Pipeline","url":"https://imc2023-98.github.io/graph-pipeline/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://imc2023-98.github.io/feed.xml" title="ITEgraph" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">ITEgraph</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/graph-pipeline/">Graph-Pipeline</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Graph-Pipeline</h1>
+  </header>
+
+  <div class="post-content">
+    <h1 id="graph-parsing-pipeline-and-example-data">Graph-Parsing Pipeline and Example Data</h1>
+
+<p>To enable reproducable results and help in understanding our approach we have open-sourced the full parsing pipeline that can create the ITEgraph from our paper.
+Additionally, the repository contains an example graph created from the <a href="https://tranco-list.eu/">Tranco</a> top 1M list that can be directly imported and explored via <a href="https://neo4j.com/">Neo4J</a>.
+The code and data can be found <a href="https://github.com/imc2023-98/graph-pipeline">[here]</a> or directly via Git:</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">git clone git@github.com:imc2023-98/graph-pipeline.git
+<span class="nb">cd </span>graph-pipeline
+git lfs pull</code></pre></figure>
+
+<p>Git-LFS is only used for the example graph.
+For simplicity, we excluded the full IPv4 address space scan (performed with <a href="https://zmap.io/">ZMap</a>) and the scan for an open port 443 on IPv6 Addresses with <a href="https://github.com/topics/zmapv6">zmapv6</a>.
+In the following we explain the steps necessary to reproduce the <code class="language-plaintext highlighter-rouge">example-data/</code> from the repository.</p>
+
+<h2 id="1-the-domain-name-input">1. The Domain Name Input</h2>
+
+<p>The initial input for our ITEgraph was a domain name list. For this example, we used the <a href="https://tranco-list.eu/">Tranco</a> top 1M domains:</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">curl https://tranco-list.eu/download/LYZG4/full | <span class="nb">cut</span> <span class="nt">-d</span> , <span class="nt">-f</span> 2 | <span class="nb">head</span> <span class="nt">-n</span> 1000000 <span class="o">&gt;</span> example-data/input.txt</code></pre></figure>
+
+<h2 id="2-dns-resolutions">2. DNS Resolutions</h2>
+
+<p>We have used a local <a href="https://www.nlnetlabs.nl/projects/unbound/about/">unbound</a> server and <a href="https://github.com/blechschmidt/massdns">massdns</a> for our large-scale DNS resolutions.
+Any software would work that produces a CSV file like the following:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>172.217.16.206,google.com
+2a00:1450:4001:806::200e,google.com
+</code></pre></div></div>
+
+<p>We started with a list of domains names (<code class="language-plaintext highlighter-rouge">example-data/input.txt</code>), resolved them via massdns, and parsed the output into the proper format:</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">massdns  <span class="nt">-o</span> J <span class="nt">-t</span> AAAA <span class="nt">-t</span> A <span class="nt">--filter</span> NOERROR <span class="nt">-r</span> ./example-data/resolvers.txt example-data/input.txt  | ./parse_massdns.py <span class="nt">--output</span> example-data/dns</code></pre></figure>
+
+<p>This creates two files each for the IPv4 and IPv6 DNS resolutions.</p>
+
+<h2 id="3-the-tls-scan">3. The TLS Scan</h2>
+
+<p>Our TLS measruements were performed with the <a href="https://github.com/tumi8/goscanner.git">TUM goscanner</a>.
+The scanner needs a single input file:</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">cat </span>example-data/dns/<span class="k">*</span>.ipdomain | <span class="nb">shuf</span> <span class="o">&gt;</span> example-data/goscanner-input.csv</code></pre></figure>
+
+<p>Then, we can start with the actual TLS measurements:</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">ulimit</span> <span class="nt">-n</span> 1024000
+goscanner <span class="nt">-C</span> example-data/goscanner.conf <span class="nt">--input-file</span> example-data/goscanner-input.csv <span class="nt">--output</span> example-data/tls</code></pre></figure>
+
+<h2 id="4-combining-it-all-as-itegraph">4. Combining it all as ITEgraph</h2>
+
+<p>We created the ITEgraph with <a href="https://spark.apache.org/">Apache Spark</a>.
+Spark can be tricky to set up; hence, we provide docker scripts that set up the environment and parse the example data.
+Have a look at the <code class="language-plaintext highlighter-rouge">docker-compose.yml</code> and the parsing script for further details.
+The script extracts the scan dates from the directory name of the input.
+Note the necessary cache directory that can be deleted after the run.</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">docker-compose up <span class="nt">--exit-code-from</span> spark <span class="o">&amp;&amp;</span> docker-compose <span class="nb">rm</span> <span class="nt">-sf</span></code></pre></figure>
+
+<h2 id="5-explore-and-analyze-the-itegraph">5. Explore and Analyze the ITEgraph</h2>
+
+<p>Our parsing pipeline produces multiple files for each type of edge and node that can be analyzed with other tools.
+For example, the CSV output under <code class="language-plaintext highlighter-rouge">example-data/ITEgraph</code> can be directly imported into Neo4J.</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">./import_neo4j.sh example-data/ITEgraph</code></pre></figure>
+
+<p>We experienced that Neo4J provides a convenient Interface to manually explore the graph; however, for more advanced analyses we recommend tools like Apache Spark with the <a href="https://graphframes.github.io/graphframes/">GraphFrames</a> library.</p>
+
+<p>The output of the Neo4J schema function:</p>
+
+<p><img src="/assets/example_schema.svg" alt="Schema of the Example-Graph" style="display:block; margin-left:auto; margin-right:auto" /></p>
+
+<p>Note that there were IP Addresses embedded as Altertnative Name in some certificates. These were always self-signed certificates.
+However, we did not consider such cases in the paper.</p>
+
+  </div>
+
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">ITEgraph</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">ITEgraph</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>A Graph Model of the TLS Ecosystem and its Internet-wide Application</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
