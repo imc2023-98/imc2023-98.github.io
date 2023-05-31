@@ -87,7 +87,7 @@ We experienced that Neo4J provides a convenient Interface to manually explore th
 
 The output of the Neo4J schema function:
 
-![Schema of the Example-Graph](/assets/example_schema.svg)
+![Schema of the Example-Graph](/assets/example_schema.svg){:style="display:block; margin-left:auto; margin-right:auto"}
 
 Note that there were IP Addresses embedded as Altertnative Name in some certificates. These were always self-signed certificates.
 However, we did not consider such cases in the paper.
